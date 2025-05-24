@@ -232,9 +232,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 📧 **Email**: your.email@example.com
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/stock-analyzer/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/stock-analyzer/discussions)
+- 📧 **Email**: aryaadityakumar222@gmail.com
+- 🐛 **Issues**: [GitHub Issues](https://github.com/adityaarya1067/stock-analyzer/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/adityaarya1067/stock-analyzer/discussions)
 
 ---
 
