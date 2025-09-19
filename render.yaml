@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: stock-analyzer-api
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python main.py --mode api"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FINNHUB_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: TAVILY_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: GROQ_API_KEY
+        sync: false  # Set manually in Render dashboard

@@ -322,16 +322,19 @@ def analyze_stock_cli(query: str):
     else:
         print(Fore.RED + result["error"])
 
+# Add this at the end of your main.py, replace the existing if __name__ == "__main__" block:
+
 if __name__ == "__main__":
     import argparse
+    import os
     
     parser = argparse.ArgumentParser(description='Stock Analysis Tool with FastAPI')
     parser.add_argument('--mode', choices=['api', 'cli'], default='api', 
                        help='Run in API mode (default) or CLI mode')
-    parser.add_argument('--port', type=int, default=8000, 
-                       help='Port for API mode (default: 8000)')
+    parser.add_argument('--port', type=int, default=int(os.environ.get('PORT', 8000)), 
+                       help='Port for API mode (default from PORT env or 8000)')
     parser.add_argument('--host', default='0.0.0.0', 
-                       help='Host for API mode (default: 127.0.0.1)')
+                       help='Host for API mode (default: 0.0.0.0)')
     
     args = parser.parse_args()
     
@@ -347,10 +350,10 @@ if __name__ == "__main__":
             "main:app",
             host=args.host,
             port=args.port,
-            reload=True,  # Auto-reload on code changes
             log_level="info"
         )
     else:
+        # CLI mode code remains the same...
         # Original CLI mode
         print(f"{Fore.GREEN}🚀 Stock Analysis CLI Mode")
         while True:
