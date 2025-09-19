@@ -6,6 +6,7 @@ from langchain_groq import ChatGroq
 from colorama import Fore, Style, init
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import uvicorn
@@ -20,14 +21,14 @@ app = FastAPI(
     title="Stock Analysis API",
     description="Real-time stock analysis with AI-powered insights",
     version="1.0.0",
-    docs_url="/docs",  # Swagger UI available at /docs
-    redoc_url="/redoc"  # ReDoc available at /redoc
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your frontend domain
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -238,7 +239,604 @@ async def analyze_stock_data(query: str) -> Dict[str, Any]:
             "error": f"❌ An unexpected error occurred: {str(e)}"
         }
 
+# HTML Content
+def get_html_content():
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2rem;
+        }
+
+        .search-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .search-btn {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            color: #667eea;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        .results-section {
+            display: none;
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        .stock-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .stock-title {
+            font-size: 2rem;
+            color: #333;
+            font-weight: 700;
+        }
+
+        .stock-ticker {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .price-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .price-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .price-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .price-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .price-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .price-change {
+            margin-top: 5px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
+
+        .analysis-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .analysis-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .analysis-content {
+            line-height: 1.6;
+            color: #555;
+            font-size: 1.1rem;
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d63384;
+            padding: 15px 20px;
+            border-radius: 10px;
+            border-left: 4px solid #d63384;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .demo-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .demo-title {
+            color: white;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+
+        .demo-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .demo-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .demo-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .api-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .api-links {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .api-link {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .api-link:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .stock-header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .price-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .demo-buttons, .api-links {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 Stock Market Analyzer</h1>
+            <p>Real-time stock analysis with AI-powered insights</p>
+        </div>
+
+        <div class="api-info">
+            <div>🚀 <strong>FastAPI Backend Integration Active</strong></div>
+            <div class="api-links">
+                <a href="/docs" class="api-link" target="_blank">📖 API Documentation</a>
+                <a href="/redoc" class="api-link" target="_blank">📘 Alternative Docs</a>
+                <a href="/health" class="api-link" target="_blank">🏥 Health Check</a>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="search-input" 
+                    placeholder="Enter company name or ticker symbol (e.g., Apple, TSLA, Microsoft)"
+                    onkeypress="handleEnter(event)"
+                />
+                <button id="searchBtn" class="search-btn" onclick="analyzeStock()">
+                    🔍 Analyze Stock
+                </button>
+            </div>
+
+            <div class="demo-section">
+                <div class="demo-title">Try these examples:</div>
+                <div class="demo-buttons">
+                    <button class="demo-btn" onclick="fillSearch('Apple')">Apple</button>
+                    <button class="demo-btn" onclick="fillSearch('Tesla')">Tesla</button>
+                    <button class="demo-btn" onclick="fillSearch('Microsoft')">Microsoft</button>
+                    <button class="demo-btn" onclick="fillSearch('Google')">Google</button>
+                    <button class="demo-btn" onclick="fillSearch('Amazon')">Amazon</button>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Analyzing stock data...</div>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+
+        <div class="results-section" id="results">
+            <div class="stock-card">
+                <div class="stock-header">
+                    <div class="stock-title" id="companyName">Company Name</div>
+                    <div class="stock-ticker" id="tickerSymbol">TICKER</div>
+                </div>
+
+                <div class="price-grid">
+                    <div class="price-card">
+                        <div class="price-label">💰 Current Price (USD)</div>
+                        <div class="price-value" id="priceUSD">$0.00</div>
+                    </div>
+                    <div class="price-card">
+                        <div class="price-label">💰 Current Price (INR)</div>
+                        <div class="price-value" id="priceINR">₹0.00</div>
+                    </div>
+                    <div class="price-card">
+                        <div class="price-label">📈 Change (USD)</div>
+                        <div class="price-value price-change" id="changeUSD">$0.00</div>
+                    </div>
+                    <div class="price-card">
+                        <div class="price-label">📈 Change (INR)</div>
+                        <div class="price-value price-change" id="changeINR">₹0.00</div>
+                    </div>
+                </div>
+
+                <div class="analysis-section">
+                    <div class="analysis-title">
+                        🧠 AI Analysis & Market Insights
+                    </div>
+                    <div class="analysis-content" id="analysisContent">
+                        Analysis will appear here...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get the current host dynamically
+        const API_BASE_URL = window.location.origin;
+
+        async function analyzeStock() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                showError('Please enter a company name or ticker symbol');
+                return;
+            }
+
+            setLoading(true);
+            hideError();
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    displayResults(result.data);
+                } else {
+                    showError(result.error || 'An error occurred while analyzing the stock');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                showError('Network error: ' + error.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function displayResults(data) {
+            document.getElementById('companyName').textContent = data.company;
+            document.getElementById('tickerSymbol').textContent = data.ticker;
+            document.getElementById('priceUSD').textContent = `$${data.price}`;
+            document.getElementById('priceINR').textContent = `₹${data.price_inr}`;
+            
+            const changeUSDElement = document.getElementById('changeUSD');
+            const changeINRElement = document.getElementById('changeINR');
+            
+            const changeSign = data.change >= 0 ? '+' : '';
+            changeUSDElement.textContent = `${changeSign}$${data.change} (${data.percent}%)`;
+            changeINRElement.textContent = `${changeSign}₹${data.change_inr} (${data.percent}%)`;
+            
+            // Apply color classes
+            const colorClass = data.change >= 0 ? 'positive' : 'negative';
+            changeUSDElement.className = `price-value price-change ${colorClass}`;
+            changeINRElement.className = `price-value price-change ${colorClass}`;
+            
+            document.getElementById('analysisContent').textContent = data.analysis;
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function setLoading(isLoading) {
+            const loadingElement = document.getElementById('loading');
+            const searchBtn = document.getElementById('searchBtn');
+            
+            if (isLoading) {
+                loadingElement.style.display = 'block';
+                searchBtn.disabled = true;
+                searchBtn.textContent = 'Analyzing...';
+            } else {
+                loadingElement.style.display = 'none';
+                searchBtn.disabled = false;
+                searchBtn.textContent = '🔍 Analyze Stock';
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter') {
+                analyzeStock();
+            }
+        }
+
+        function fillSearch(company) {
+            document.getElementById('searchInput').value = company;
+        }
+
+        // Health check for backend connection
+        async function checkBackendHealth() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                console.log('Backend health:', data);
+                return true;
+            } catch (error) {
+                console.warn('Backend health check failed:', error.message);
+                return false;
+            }
+        }
+
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check backend health on page load
+            checkBackendHealth().then(isHealthy => {
+                if (isHealthy) {
+                    console.log('✅ FastAPI backend is running and healthy!');
+                } else {
+                    showError('Backend health check failed. Some features may not work properly.');
+                }
+            });
+
+            // Add focus effect to search input
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'scale(1.02)';
+            });
+            
+            searchInput.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
+"""
+
 # FastAPI Routes
+
+@app.get("/")
+async def serve_frontend():
+    """
+    Serve the integrated HTML frontend
+    """
+    return HTMLResponse(content=get_html_content())
+
 @app.post("/analyze", response_model=StockAnalysisResponse)
 async def analyze_stock_endpoint(request: StockAnalysisRequest):
     """
@@ -285,22 +883,6 @@ async def health_check():
         }
     )
 
-@app.get("/")
-async def root():
-    """Basic info endpoint"""
-    return {
-        "message": "Stock Analysis API with FastAPI",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "health": "/health",
-        "endpoints": {
-            "/analyze": "POST - Analyze stock data",
-            "/health": "GET - Health check",
-            "/docs": "GET - Interactive API documentation",
-            "/redoc": "GET - Alternative API documentation"
-        }
-    }
-
 # Original CLI function (preserved for backward compatibility)
 def analyze_stock_cli(query: str):
     """Original function for CLI usage - runs async function in sync context"""
@@ -322,15 +904,12 @@ def analyze_stock_cli(query: str):
     else:
         print(Fore.RED + result["error"])
 
-# Add this at the end of your main.py, replace the existing if __name__ == "__main__" block:
-
 if __name__ == "__main__":
     import argparse
-    import os
     
-    parser = argparse.ArgumentParser(description='Stock Analysis Tool with FastAPI')
+    parser = argparse.ArgumentParser(description='Stock Analysis Tool with FastAPI and Integrated Frontend')
     parser.add_argument('--mode', choices=['api', 'cli'], default='api', 
-                       help='Run in API mode (default) or CLI mode')
+                       help='Run in API mode with integrated frontend (default) or CLI mode')
     parser.add_argument('--port', type=int, default=int(os.environ.get('PORT', 8000)), 
                        help='Port for API mode (default from PORT env or 8000)')
     parser.add_argument('--host', default='0.0.0.0', 
@@ -339,22 +918,24 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if args.mode == 'api':
-        print(f"{Fore.GREEN}🚀 Starting Stock Analysis FastAPI Server...")
-        print(f"{Fore.CYAN}📡 Server running at: http://{args.host}:{args.port}")
+        print(f"{Fore.GREEN}🚀 Starting Stock Analysis FastAPI Server with Integrated Frontend...")
+        print(f"{Fore.CYAN}🌐 Frontend available at: http://{args.host}:{args.port}")
+        print(f"{Fore.CYAN}📡 API Server running at: http://{args.host}:{args.port}")
         print(f"{Fore.CYAN}📋 Health check: http://{args.host}:{args.port}/health")
         print(f"{Fore.CYAN}📖 API Docs: http://{args.host}:{args.port}/docs")
         print(f"{Fore.CYAN}📘 ReDoc: http://{args.host}:{args.port}/redoc")
         print(f"{Fore.YELLOW}⚡ Ready to analyze stocks!")
+        print(f"{Fore.MAGENTA}💡 Just open your browser and visit the URL above!")
         
         uvicorn.run(
             "main:app",
             host=args.host,
             port=args.port,
-            log_level="info"
+            log_level="info",
+            reload=True  # Enable auto-reload during development
         )
     else:
-        # CLI mode code remains the same...
-        # Original CLI mode
+        # CLI mode
         print(f"{Fore.GREEN}🚀 Stock Analysis CLI Mode")
         while True:
             query = input(Fore.BLUE + "🔎 Enter your stock-related query (or 'exit' to quit): ")
